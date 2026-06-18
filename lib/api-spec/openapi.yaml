@@ -1,22 +1,36 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: AI Quiz Generator API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: boards
+    description: Board operations
+  - name: standards
+    description: Standard operations
+  - name: subjects
+    description: Subject operations
+  - name: chapters
+    description: Chapter operations
+  - name: topics
+    description: Topic operations
+  - name: settings
+    description: Settings operations
+  - name: quiz
+    description: Quiz generation operations
+  - name: dashboard
+    description: Dashboard operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +38,359 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /boards:
+    get:
+      operationId: listBoards
+      tags: [boards]
+      summary: List all boards
+      responses:
+        "200":
+          description: List of boards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Board"
+    post:
+      operationId: createBoard
+      tags: [boards]
+      summary: Create a board
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BoardInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Board"
+
+  /boards/{id}:
+    delete:
+      operationId: deleteBoard
+      tags: [boards]
+      summary: Delete a board
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+
+  /standards:
+    get:
+      operationId: listStandards
+      tags: [standards]
+      summary: List standards, optionally filtered by boardId
+      parameters:
+        - name: boardId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of standards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Standard"
+    post:
+      operationId: createStandard
+      tags: [standards]
+      summary: Create a standard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StandardInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Standard"
+
+  /standards/{id}:
+    delete:
+      operationId: deleteStandard
+      tags: [standards]
+      summary: Delete a standard
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+
+  /subjects:
+    get:
+      operationId: listSubjects
+      tags: [subjects]
+      summary: List subjects, optionally filtered by standardId
+      parameters:
+        - name: standardId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of subjects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Subject"
+    post:
+      operationId: createSubject
+      tags: [subjects]
+      summary: Create a subject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubjectInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subject"
+
+  /subjects/{id}:
+    delete:
+      operationId: deleteSubject
+      tags: [subjects]
+      summary: Delete a subject
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+
+  /chapters:
+    get:
+      operationId: listChapters
+      tags: [chapters]
+      summary: List chapters, optionally filtered by subjectId
+      parameters:
+        - name: subjectId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of chapters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Chapter"
+    post:
+      operationId: createChapter
+      tags: [chapters]
+      summary: Create a chapter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChapterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chapter"
+
+  /chapters/{id}:
+    delete:
+      operationId: deleteChapter
+      tags: [chapters]
+      summary: Delete a chapter
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+
+  /topics:
+    get:
+      operationId: listTopics
+      tags: [topics]
+      summary: List topics, optionally filtered by chapterId
+      parameters:
+        - name: chapterId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of topics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Topic"
+    post:
+      operationId: createTopic
+      tags: [topics]
+      summary: Create a topic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TopicInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Topic"
+
+  /topics/{id}:
+    delete:
+      operationId: deleteTopic
+      tags: [topics]
+      summary: Delete a topic
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get current settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    put:
+      operationId: saveSettings
+      tags: [settings]
+      summary: Save settings (API key, provider, model)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsInput"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
+  /quiz/generate:
+    post:
+      operationId: generateQuiz
+      tags: [quiz]
+      summary: Generate quiz questions using AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizGenerateInput"
+      responses:
+        "200":
+          description: Generated quiz
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizSession"
+
+  /quiz/history:
+    get:
+      operationId: listQuizHistory
+      tags: [quiz]
+      summary: List past quiz sessions
+      responses:
+        "200":
+          description: Quiz history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuizSession"
+
+  /dashboard/stats:
+    get:
+      operationId: getDashboardStats
+      tags: [dashboard]
+      summary: Get dashboard stats
+      responses:
+        "200":
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +401,319 @@ components:
       required:
         - status
 
+    DeleteResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    Board:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - createdAt
+
+    BoardInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+      required:
+        - name
+
+    Standard:
+      type: object
+      properties:
+        id:
+          type: integer
+        boardId:
+          type: integer
+        boardName:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - boardId
+        - boardName
+        - name
+        - createdAt
+
+    StandardInput:
+      type: object
+      properties:
+        boardId:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+      required:
+        - boardId
+        - name
+
+    Subject:
+      type: object
+      properties:
+        id:
+          type: integer
+        standardId:
+          type: integer
+        standardName:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - standardId
+        - standardName
+        - name
+        - createdAt
+
+    SubjectInput:
+      type: object
+      properties:
+        standardId:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+      required:
+        - standardId
+        - name
+
+    Chapter:
+      type: object
+      properties:
+        id:
+          type: integer
+        subjectId:
+          type: integer
+        subjectName:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - subjectId
+        - subjectName
+        - name
+        - createdAt
+
+    ChapterInput:
+      type: object
+      properties:
+        subjectId:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+      required:
+        - subjectId
+        - name
+
+    Topic:
+      type: object
+      properties:
+        id:
+          type: integer
+        chapterId:
+          type: integer
+        chapterName:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - chapterId
+        - chapterName
+        - name
+        - createdAt
+
+    TopicInput:
+      type: object
+      properties:
+        chapterId:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+      required:
+        - chapterId
+        - name
+
+    Settings:
+      type: object
+      properties:
+        apiKey:
+          type: ["string", "null"]
+        provider:
+          type: string
+        model:
+          type: string
+        hasKey:
+          type: boolean
+      required:
+        - provider
+        - model
+        - hasKey
+
+    SettingsInput:
+      type: object
+      properties:
+        apiKey:
+          type: string
+        provider:
+          type: string
+        model:
+          type: string
+      required:
+        - apiKey
+        - provider
+        - model
+
+    QuizGenerateInput:
+      type: object
+      properties:
+        topicId:
+          type: integer
+        questionCount:
+          type: integer
+          minimum: 1
+          maximum: 50
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+      required:
+        - topicId
+        - questionCount
+        - difficulty
+
+    Question:
+      type: object
+      properties:
+        id:
+          type: integer
+        question:
+          type: string
+        type:
+          type: string
+          enum: [mcq, short_answer, long_answer]
+        options:
+          type: ["array", "null"]
+          items:
+            type: string
+        correctAnswer:
+          type: string
+        explanation:
+          type: string
+        hasDiagram:
+          type: boolean
+        diagramDescription:
+          type: ["string", "null"]
+        hasEquation:
+          type: boolean
+        equations:
+          type: ["array", "null"]
+          items:
+            type: string
+        difficulty:
+          type: string
+      required:
+        - id
+        - question
+        - type
+        - correctAnswer
+        - explanation
+        - hasDiagram
+        - hasEquation
+        - difficulty
+
+    QuizSession:
+      type: object
+      properties:
+        id:
+          type: integer
+        topicId:
+          type: integer
+        topicName:
+          type: string
+        chapterName:
+          type: string
+        subjectName:
+          type: string
+        standardName:
+          type: string
+        boardName:
+          type: string
+        questionCount:
+          type: integer
+        difficulty:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Question"
+        createdAt:
+          type: string
+      required:
+        - id
+        - topicId
+        - topicName
+        - chapterName
+        - subjectName
+        - standardName
+        - boardName
+        - questionCount
+        - difficulty
+        - questions
+        - createdAt
+
+    DashboardStats:
+      type: object
+      properties:
+        totalBoards:
+          type: integer
+        totalStandards:
+          type: integer
+        totalSubjects:
+          type: integer
+        totalChapters:
+          type: integer
+        totalTopics:
+          type: integer
+        totalQuizzes:
+          type: integer
+        totalQuestions:
+          type: integer
+        recentQuizzes:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuizSession"
+      required:
+        - totalBoards
+        - totalStandards
+        - totalSubjects
+        - totalChapters
+        - totalTopics
+        - totalQuizzes
+        - totalQuestions
+        - recentQuizzes
