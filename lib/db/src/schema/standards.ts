@@ -1,13 +1,13 @@
-import { pgTable, text, serial, timestamp, integer } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { boardsTable } from "./boards";
 
-export const standardsTable = pgTable("standards", {
-  id: serial("id").primaryKey(),
+export const standardsTable = sqliteTable("standards", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   boardId: integer("board_id").notNull().references(() => boardsTable.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
 export const insertStandardSchema = createInsertSchema(standardsTable).omit({ id: true, createdAt: true });

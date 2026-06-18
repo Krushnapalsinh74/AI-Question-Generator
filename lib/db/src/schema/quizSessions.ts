@@ -1,10 +1,10 @@
-import { pgTable, serial, timestamp, integer, text, jsonb } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { topicsTable } from "./topics";
 
-export const quizSessionsTable = pgTable("quiz_sessions", {
-  id: serial("id").primaryKey(),
+export const quizSessionsTable = sqliteTable("quiz_sessions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   topicId: integer("topic_id").notNull().references(() => topicsTable.id, { onDelete: "cascade" }),
   topicName: text("topic_name").notNull(),
   chapterName: text("chapter_name").notNull(),
@@ -13,8 +13,8 @@ export const quizSessionsTable = pgTable("quiz_sessions", {
   boardName: text("board_name").notNull(),
   questionCount: integer("question_count").notNull(),
   difficulty: text("difficulty").notNull(),
-  questions: jsonb("questions").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  questions: text("questions", { mode: "json" }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
 export const insertQuizSessionSchema = createInsertSchema(quizSessionsTable).omit({ id: true, createdAt: true });

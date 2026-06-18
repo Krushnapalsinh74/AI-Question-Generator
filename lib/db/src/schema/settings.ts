@@ -1,9 +1,9 @@
-import { pgTable, text, serial } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const settingsTable = pgTable("settings", {
-  id: serial("id").primaryKey(),
+export const settingsTable = sqliteTable("settings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   apiKey: text("api_key"),
   provider: text("provider").notNull().default("openai"),
   model: text("model").notNull().default("gpt-4o"),

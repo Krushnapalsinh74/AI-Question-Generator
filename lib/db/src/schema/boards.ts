@@ -1,11 +1,11 @@
-import { pgTable, text, serial, timestamp } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const boardsTable = pgTable("boards", {
-  id: serial("id").primaryKey(),
+export const boardsTable = sqliteTable("boards", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
 export const insertBoardSchema = createInsertSchema(boardsTable).omit({ id: true, createdAt: true });
