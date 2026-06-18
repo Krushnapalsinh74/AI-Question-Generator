@@ -8,6 +8,33 @@ import {
 } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
 
+function parseAIQuestions(raw: string): unknown[] {
+  // 1. Strip markdown code fences (```json ... ``` or ``` ... ```)
+  let text = raw.trim();
+  const fenceMatch = text.match(/^```(?:json)?\s*([\s\S]*?)```$/);
+  if (fenceMatch) text = fenceMatch[1].trim();
+
+  // 2. Try parsing as-is first
+  try {
+    const obj = JSON.parse(text) as { questions?: unknown[] } | unknown[];
+    const questions = Array.isArray(obj) ? obj : (obj as { questions?: unknown[] }).questions;
+    if (!Array.isArray(questions)) throw new Error("questions must be an array");
+    return questions;
+  } catch (_) {
+    // fall through to repair
+  }
+
+  // 3. Repair bare backslashes that are invalid JSON escape sequences.
+  //    LaTeX like \frac, \sin, \alpha etc. trips JSON.parse.
+  //    Replace \ not followed by a valid JSON escape char with \\.
+  const repaired = text.replace(/\\(?!["\\/bfnrtu0-9])/g, "\\\\");
+
+  const obj = JSON.parse(repaired) as { questions?: unknown[] } | unknown[];
+  const questions = Array.isArray(obj) ? obj : (obj as { questions?: unknown[] }).questions;
+  if (!Array.isArray(questions)) throw new Error("questions must be an array");
+  return questions;
+}
+
 const router: IRouter = Router();
 
 async function callAI(apiKey: string, provider: string, model: string, prompt: string): Promise<string> {
@@ -183,9 +210,7 @@ router.post("/quiz/generate", async (req, res): Promise<void> => {
 
   let questions: unknown[];
   try {
-    const parsed2 = JSON.parse(rawText) as { questions: unknown[] };
-    questions = parsed2.questions;
-    if (!Array.isArray(questions)) throw new Error("questions must be an array");
+    questions = parseAIQuestions(rawText);
   } catch (err) {
     logger.error({ err, rawText }, "Failed to parse AI response as JSON");
     res.status(502).json({ error: "AI returned invalid JSON. Try again." });
