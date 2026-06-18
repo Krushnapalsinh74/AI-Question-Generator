@@ -8,31 +8,82 @@ import {
 } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
 
-function parseAIQuestions(raw: string): unknown[] {
-  // 1. Strip markdown code fences (```json ... ``` or ``` ... ```)
-  let text = raw.trim();
-  const fenceMatch = text.match(/^```(?:json)?\s*([\s\S]*?)```$/);
-  if (fenceMatch) text = fenceMatch[1].trim();
+function extractQuestionsFromObj(obj: unknown): unknown[] {
+  if (Array.isArray(obj)) return obj;
+  const o = obj as Record<string, unknown>;
+  if (Array.isArray(o.questions)) return o.questions as unknown[];
+  throw new Error("questions array not found in response");
+}
 
-  // 2. Try parsing as-is first
+function repairJson(text: string): string {
+  // Step 1: Replace raw control characters inside JSON strings (actual tabs, newlines etc.)
+  // Step 2: Fix bare backslashes not part of a valid JSON escape sequence
+  // Valid JSON escapes after \: " \ / b f n r t u
+  // We also need to NOT double-escape already-doubled backslashes.
+
+  // First, aggressively fix all backslash issues by processing char by char:
+  let out = "";
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i];
+    if (ch === "\\") {
+      const next = text[i + 1];
+      if (next === '"' || next === "\\" || next === "/" ||
+          next === "b" || next === "f" || next === "n" ||
+          next === "r" || next === "t") {
+        // Valid 2-char escape — keep as-is
+        out += ch + next;
+        i += 2;
+      } else if (next === "u" && /[0-9a-fA-F]{4}/.test(text.slice(i + 2, i + 6))) {
+        // Valid \uXXXX — keep as-is
+        out += text.slice(i, i + 6);
+        i += 6;
+      } else {
+        // Invalid escape — double the backslash
+        out += "\\\\";
+        i += 1;
+      }
+    } else {
+      // Escape raw control characters that are illegal inside JSON strings
+      const code = ch.charCodeAt(0);
+      if (code < 0x20) {
+        if (code === 0x09) out += "\\t";
+        else if (code === 0x0a) out += "\\n";
+        else if (code === 0x0d) out += "\\r";
+        else out += `\\u${code.toString(16).padStart(4, "0")}`;
+      } else {
+        out += ch;
+      }
+      i++;
+    }
+  }
+  return out;
+}
+
+function parseAIQuestions(raw: string): unknown[] {
+  // Strategy 1: parse as-is
+  const trimmed = raw.trim();
   try {
-    const obj = JSON.parse(text) as { questions?: unknown[] } | unknown[];
-    const questions = Array.isArray(obj) ? obj : (obj as { questions?: unknown[] }).questions;
-    if (!Array.isArray(questions)) throw new Error("questions must be an array");
-    return questions;
-  } catch (_) {
-    // fall through to repair
+    return extractQuestionsFromObj(JSON.parse(trimmed));
+  } catch (_) { /* try next */ }
+
+  // Strategy 2: strip markdown code fences (anywhere in text)
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const fenced = fenceMatch ? fenceMatch[1].trim() : trimmed;
+  if (fenced !== trimmed) {
+    try {
+      return extractQuestionsFromObj(JSON.parse(fenced));
+    } catch (_) { /* try next */ }
   }
 
-  // 3. Repair bare backslashes that are invalid JSON escape sequences.
-  //    LaTeX like \frac, \sin, \alpha etc. trips JSON.parse.
-  //    Replace \ not followed by a valid JSON escape char with \\.
-  const repaired = text.replace(/\\(?!["\\/bfnrtu0-9])/g, "\\\\");
+  // Strategy 3: extract the outermost JSON object by finding first { and last }
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  const extracted = start !== -1 && end > start ? trimmed.slice(start, end + 1) : fenced;
 
-  const obj = JSON.parse(repaired) as { questions?: unknown[] } | unknown[];
-  const questions = Array.isArray(obj) ? obj : (obj as { questions?: unknown[] }).questions;
-  if (!Array.isArray(questions)) throw new Error("questions must be an array");
-  return questions;
+  // Strategy 4: repair backslash escapes and control characters, then parse
+  const repaired = repairJson(extracted);
+  return extractQuestionsFromObj(JSON.parse(repaired));
 }
 
 const router: IRouter = Router();
@@ -129,9 +180,16 @@ IMPORTANT RULES:
 - For "${difficulty}" difficulty: ${difficultyGuide}
 - Mix question types: MCQ (multiple choice), short_answer, and long_answer
 - For hard questions: maximize depth and complexity within the syllabus, don't make them trivial
-- If the topic involves mathematics, physics, chemistry, or any STEM subject, include equations using LaTeX notation (e.g., $E = mc^2$, $\\frac{d}{dx}[x^n] = nx^{n-1}$)
+- If the topic involves mathematics, physics, chemistry, or any STEM subject, include equations using LaTeX notation
 - If a question refers to a diagram, describe the diagram clearly in diagramDescription
 - Quality over quantity — each question must be meaningful and educational
+
+CRITICAL JSON FORMATTING — YOU MUST FOLLOW THIS:
+- Your response must be RAW JSON only — no markdown, no code fences, no explanation text before or after
+- In JSON strings, ALL LaTeX backslashes MUST be doubled: write \\\\frac not \\frac, write \\\\sin not \\sin, write \\\\theta not \\theta
+- Example of CORRECT LaTeX in JSON: "$$\\\\frac{d}{dx}[x^n] = nx^{n-1}$$"
+- Example of WRONG LaTeX in JSON: "$\\frac{d}{dx}[x^n] = nx^{n-1}$"
+- Never use single backslash before any letter in a JSON string value
 
 Respond ONLY with a valid JSON object in this exact format:
 {
