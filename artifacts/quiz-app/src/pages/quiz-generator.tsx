@@ -8,7 +8,8 @@ import {
   useListSubjects, getListSubjectsQueryKey,
   useListChapters, getListChaptersQueryKey,
   useListTopics, getListTopicsQueryKey,
-  useGenerateQuiz, useListQuizHistory, getListQuizHistoryQueryKey
+  useGenerateQuiz, useListQuizHistory, getListQuizHistoryQueryKey,
+  useGetSettings, getGetSettingsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +19,8 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Wand2, Loader2, History, LibraryBig } from "lucide-react";
+import { Wand2, Loader2, History, LibraryBig, AlertTriangle } from "lucide-react";
+import { useLocation } from "wouter";
 import { QuizDisplay } from "@/components/quiz-display";
 import { format } from "date-fns";
 
@@ -57,6 +59,9 @@ export default function QuizGenerator() {
   const selectedSubject = form.watch("subjectId");
   const selectedChapter = form.watch("chapterId");
 
+  const [, setLocation] = useLocation();
+  const { data: settings } = useGetSettings({ query: { queryKey: getGetSettingsQueryKey() } });
+
   const { data: boards, isLoading: isLoadingBoards } = useListBoards({ query: { queryKey: getListBoardsQueryKey() } });
   const { data: standards } = useListStandards({ boardId: Number(selectedBoard) || undefined }, { query: { enabled: !!selectedBoard, queryKey: getListStandardsQueryKey({ boardId: Number(selectedBoard) || undefined }) } });
   const { data: subjects } = useListSubjects({ standardId: Number(selectedStandard) || undefined }, { query: { enabled: !!selectedStandard, queryKey: getListSubjectsQueryKey({ standardId: Number(selectedStandard) || undefined }) } });
@@ -82,10 +87,14 @@ export default function QuizGenerator() {
         setGeneratedQuestions(response.questions);
         queryClient.invalidateQueries({ queryKey: getListQuizHistoryQueryKey() });
       },
-      onError: (error) => {
+      onError: (error: any) => {
+        const message =
+          error?.response?.data?.error ||
+          error?.message ||
+          "Could not generate questions. Please check your API settings.";
         toast({
           title: "Generation Failed",
-          description: "Could not generate questions. Check your API settings.",
+          description: message,
           variant: "destructive",
         });
       }
@@ -98,6 +107,23 @@ export default function QuizGenerator() {
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Quiz Generator</h1>
         <p className="text-muted-foreground mt-2">Generate precise, targeted questions from your curriculum.</p>
       </div>
+
+      {settings && !settings.hasKey && (
+        <div className="flex items-start gap-3 rounded-lg border border-yellow-300 bg-yellow-50 dark:bg-yellow-950/30 dark:border-yellow-800 px-4 py-3 text-yellow-800 dark:text-yellow-200">
+          <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-yellow-500" />
+          <div className="flex-1 text-sm">
+            <span className="font-semibold">No API key configured.</span>{" "}
+            Go to{" "}
+            <button
+              onClick={() => setLocation("/settings")}
+              className="underline font-medium hover:no-underline"
+            >
+              Settings
+            </button>{" "}
+            and enter your AI API key before generating questions.
+          </div>
+        </div>
+      )}
 
       <Tabs defaultValue="generate" className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
