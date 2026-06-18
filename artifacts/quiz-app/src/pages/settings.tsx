@@ -47,21 +47,18 @@ export default function SettingsPage() {
   }, [settings, form]);
 
   const onSubmit = (data: SettingsFormValues) => {
-    // If no new key provided and we already have one, don't update key
-    const payload = {
-      provider: data.provider,
-      model: data.model,
-      apiKey: data.apiKey || "", // Send empty string if they want to clear it? No, if empty string, backend should ideally preserve if hasKey. Actually, our API takes apiKey as string.
-    };
-    
-    // In our spec, settingsInput requires apiKey, provider, model.
-    // We'll pass what we have. If they didn't enter a key but we have one, 
-    // the backend will probably update it to empty if we send empty.
-    // Wait, if it requires apiKey, we have to send a fake one or handle it in backend.
-    // Let's send the form data. If they don't enter anything, we send empty string, 
-    // but warn them if they overwrite a valid key with empty.
-    
-    saveSettings.mutate({ data: { ...payload, apiKey: payload.apiKey || "existing_key_placeholder" } }, {
+    if (!data.apiKey && !settings?.hasKey) {
+      toast({
+        title: "API Key required",
+        description: "Please enter your API key.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Send "__preserve__" as a sentinel when the user leaves the field blank
+    // and an existing key is already saved — the backend will keep the stored key
+    saveSettings.mutate({ data: { provider: data.provider, model: data.model, apiKey: data.apiKey || "__preserve__" } }, {
       onSuccess: () => {
         toast({
           title: "Settings saved",
@@ -105,16 +102,20 @@ export default function SettingsPage() {
   const providerModels: Record<string, { id: string, name: string }[]> = {
     openai: [
       { id: "gpt-4o", name: "GPT-4o" },
-      { id: "gpt-4-turbo", name: "GPT-4 Turbo" },
-      { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo" },
+      { id: "gpt-4o-mini", name: "GPT-4o Mini" },
+      { id: "gpt-4.1", name: "GPT-4.1" },
+      { id: "gpt-4.1-mini", name: "GPT-4.1 Mini" },
     ],
     anthropic: [
-      { id: "claude-3-5-sonnet-20240620", name: "Claude 3.5 Sonnet" },
+      { id: "claude-3-7-sonnet-20250219", name: "Claude 3.7 Sonnet" },
+      { id: "claude-3-5-sonnet-20241022", name: "Claude 3.5 Sonnet" },
+      { id: "claude-3-5-haiku-20241022", name: "Claude 3.5 Haiku" },
       { id: "claude-3-opus-20240229", name: "Claude 3 Opus" },
-      { id: "claude-3-haiku-20240307", name: "Claude 3 Haiku" },
     ],
     gemini: [
-      { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro" },
+      { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro" },
+      { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
+      { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash" },
       { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash" },
     ]
   };

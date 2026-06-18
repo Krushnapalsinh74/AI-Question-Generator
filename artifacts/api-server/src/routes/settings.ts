@@ -32,17 +32,21 @@ router.put("/settings", async (req, res): Promise<void> => {
 
   const rows = await db.select().from(settingsTable).limit(1);
 
+  const preserve = parsed.data.apiKey === "__preserve__";
+  const existingKey = rows.length > 0 ? rows[0].apiKey : null;
+  const keyToStore = preserve ? existingKey : (parsed.data.apiKey || null);
+
   let saved;
   if (rows.length === 0) {
     const [inserted] = await db.insert(settingsTable).values({
-      apiKey: parsed.data.apiKey,
+      apiKey: keyToStore,
       provider: parsed.data.provider,
       model: parsed.data.model,
     }).returning();
     saved = inserted;
   } else {
     const [updated] = await db.update(settingsTable).set({
-      apiKey: parsed.data.apiKey,
+      apiKey: keyToStore,
       provider: parsed.data.provider,
       model: parsed.data.model,
     }).returning();
